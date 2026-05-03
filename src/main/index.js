@@ -1,3 +1,21 @@
+// SonarQube Scan Action
+// Copyright (C) SonarSource Sàrl
+// mailto:contact AT sonarsource DOT com
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 import * as core from "@actions/core";
 import { installSonarScanner } from "./install-sonar-scanner";
 import { runSonarScanner } from "./run-sonar-scanner";
@@ -16,8 +34,9 @@ function getInputs() {
   const projectBaseDir = core.getInput("projectBaseDir");
   const scannerBinariesUrl = core.getInput("scannerBinariesUrl");
   const scannerVersion = core.getInput("scannerVersion");
+  const skipSignatureVerification = core.getBooleanInput("skipSignatureVerification");
 
-  return { args, projectBaseDir, scannerBinariesUrl, scannerVersion };
+  return { args, projectBaseDir, scannerBinariesUrl, scannerVersion, skipSignatureVerification };
 }
 
 /**
@@ -53,7 +72,7 @@ function runSanityChecks(inputs) {
 
 async function run() {
   try {
-    const { args, projectBaseDir, scannerVersion, scannerBinariesUrl } =
+    const { args, projectBaseDir, scannerVersion, scannerBinariesUrl, skipSignatureVerification } =
       getInputs();
     const runnerEnv = getEnvVariables();
     const { sonarToken } = runnerEnv;
@@ -63,6 +82,7 @@ async function run() {
     const scannerDir = await installSonarScanner({
       scannerVersion,
       scannerBinariesUrl,
+      skipSignatureVerification,
     });
 
     await runSonarScanner(args, projectBaseDir, scannerDir, runnerEnv);

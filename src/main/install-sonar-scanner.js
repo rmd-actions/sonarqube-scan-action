@@ -1,12 +1,31 @@
+// SonarQube Scan Action
+// Copyright (C) SonarSource Sàrl
+// mailto:contact AT sonarsource DOT com
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
 import * as core from "@actions/core";
 import * as tc from "@actions/tool-cache";
-import * as os from "os";
-import * as path from "path";
+import * as os from "node:os";
+import * as path from "node:path";
 import {
   getPlatformFlavor,
   getScannerDownloadURL,
   scannerDirName,
 } from "./utils";
+import { verifySignature } from "./gpg-verification";
 
 const TOOLNAME = "sonar-scanner-cli";
 
@@ -16,6 +35,7 @@ const TOOLNAME = "sonar-scanner-cli";
 export async function installSonarScanner({
   scannerVersion,
   scannerBinariesUrl,
+  skipSignatureVerification = false,
 }) {
   const flavor = getPlatformFlavor(os.platform(), os.arch());
 
@@ -36,6 +56,25 @@ export async function installSonarScanner({
     core.info(`Downloading from: ${downloadUrl}`);
 
     const downloadPath = await tc.downloadTool(downloadUrl);
+
+    if (skipSignatureVerification) {
+      core.warning("⚠ Skipping GPG signature verification (not recommended)");
+    } else {
+      const signatureUrl = `${downloadUrl}.asc`;
+      core.info(`Downloading signature from: ${signatureUrl}`);
+
+      let signaturePath;
+      try {
+        signaturePath = await tc.downloadTool(signatureUrl);
+      } catch (error) {
+        throw new Error(
+          `Failed to download signature file from ${signatureUrl}: ${error.message}`
+        );
+      }
+
+      await verifySignature(downloadPath, signaturePath);
+    }
+
     const extractedPath = await tc.extractZip(downloadPath);
 
     // Find the actual scanner directory inside the extracted folder
