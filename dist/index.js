@@ -1,4 +1,4 @@
-import { i as isRooted, w as which, e as exists, a as info, d as debug, m as mkdirP, c as cp, H as HttpClient, r as rmRF, b as isDebug, f as execExports, g as warning, h as addPath, s as setFailed, j as getInput, k as getBooleanInput, l as core } from './exec-zlpfwmpH.js';
+import { i as isRooted, w as which, e as exists, a as info, d as debug, m as mkdirP, c as cp, H as HttpClient, r as rmRF, b as isDebug, f as execExports, g as warning, s as setSecret, h as addPath, j as setFailed, k as getInput, l as getBooleanInput, n as core } from './exec-BeYcktvA.js';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -10,6 +10,7 @@ import { ok } from 'assert';
 import 'string_decoder';
 import * as events from 'events';
 import { setTimeout as setTimeout$1 } from 'timers';
+import * as fs$2 from 'node:fs/promises';
 import * as os$1 from 'node:os';
 import * as path$1 from 'node:path';
 import { join } from 'node:path';
@@ -3503,6 +3504,13 @@ function downloadToolAttempt(url, dest, auth, headers) {
         const http = new HttpClient(userAgent, [], {
             allowRetries: false
         });
+        if (auth) {
+            debug('set auth');
+            if (headers === undefined) {
+                headers = {};
+            }
+            headers.authorization = auth;
+        }
         const response = yield http.get(url, headers);
         if (response.message.statusCode !== 200) {
             const err = new HTTPError(response.message.statusCode);
@@ -3855,6 +3863,19 @@ function getScannerDownloadURL({
 const scannerDirName = (version, flavor) =>
   `sonar-scanner-${version}-${flavor}`;
 
+/**
+ * Converts a 4-part version string (e.g. "8.0.1.6346") to a SemVer 2.0 compatible
+ * string (e.g. "8.0.1-build.6346") for use with GitHub's tool-cache library,
+ * which requires SemVer-compliant version strings.
+ */
+function toSemVer(version) {
+  const parts = version.split(".");
+  if (parts.length === 4) {
+    return `${parts[0]}.${parts[1]}.${parts[2]}-build.${parts[3]}`;
+  }
+  return version;
+}
+
 /*
  * sonarqube-scan-action
  * Copyright (C) 2025 SonarSource SA
@@ -3978,6 +3999,18 @@ function setupGpgHome() {
 }
 
 /**
+ * Detects HTTPS proxy from environment variables.
+ * Checks both upper and lower case variants (HTTPS_PROXY, https_proxy).
+ * Only HTTPS proxy is used since keyservers use hkps:// (TLS).
+ * HTTP_PROXY is intentionally not used as a fallback to avoid routing
+ * HTTPS traffic through a proxy not intended for TLS connections.
+ * @returns {string|undefined} Proxy URL or undefined if not set
+ */
+function getProxyFromEnv() {
+  return process.env.HTTPS_PROXY || process.env.https_proxy;
+}
+
+/**
  * Attempts to import a public key from a specific keyserver
  * @param {string} gpgHome - Path to GPG home directory
  * @param {string} keyFingerprint - Public key fingerprint
@@ -3988,6 +4021,15 @@ function setupGpgHome() {
 async function tryImportKey(gpgHome, keyFingerprint, keyserver) {
   const gpgCommand = getGpgCommand();
   const gpgHomePath = convertToUnixPath(gpgHome);
+  const proxyUrl = getProxyFromEnv();
+
+  if (proxyUrl) {
+    // The URL may carry credentials (e.g. http://user:pass@proxy:8080).
+    // Register it as a secret so future logging (here or downstream) is
+    // automatically redacted
+    setSecret(proxyUrl);
+    info("Using HTTPS_PROXY for keyserver access");
+  }
 
   await execExports.exec(
     gpgCommand,
@@ -3997,6 +4039,7 @@ async function tryImportKey(gpgHome, keyFingerprint, keyserver) {
       "--batch",
       "--keyserver",
       keyserver,
+      ...(proxyUrl ? ["--keyserver-options", `http-proxy=${proxyUrl}`] : []),
       "--recv-keys",
       keyFingerprint,
     ],
@@ -4112,18 +4155,29 @@ function cleanupGpgHome(gpgHome) {
 
 const TOOLNAME = "sonar-scanner-cli";
 
+async function ensureZipExtension(filePath) {
+  if (filePath.endsWith(".zip")) {
+    return filePath;
+  }
+  const zipPath = `${filePath}.zip`;
+  await fs$2.rename(filePath, zipPath);
+  return zipPath;
+}
+
 /**
  * Download the Sonar Scanner CLI for the current environment and cache it.
  */
 async function installSonarScanner({
   scannerVersion,
   scannerBinariesUrl,
+  scannerBinariesAuthHeader,
   skipSignatureVerification = false,
 }) {
   const flavor = getPlatformFlavor(os$1.platform(), os$1.arch());
+  const semVerVersion = toSemVer(scannerVersion);
 
   // Check if tool is already cached
-  let toolDir = find(TOOLNAME, scannerVersion, flavor);
+  let toolDir = find(TOOLNAME, semVerVersion, flavor);
 
   if (!toolDir) {
     info(
@@ -4138,7 +4192,7 @@ async function installSonarScanner({
 
     info(`Downloading from: ${downloadUrl}`);
 
-    const downloadPath = await downloadTool(downloadUrl);
+    const downloadPath = await downloadTool(downloadUrl, undefined, scannerBinariesAuthHeader);
 
     if (skipSignatureVerification) {
       warning("⚠ Skipping GPG signature verification (not recommended)");
@@ -4148,7 +4202,7 @@ async function installSonarScanner({
 
       let signaturePath;
       try {
-        signaturePath = await downloadTool(signatureUrl);
+        signaturePath = await downloadTool(signatureUrl, undefined, scannerBinariesAuthHeader);
       } catch (error) {
         throw new Error(
           `Failed to download signature file from ${signatureUrl}: ${error.message}`
@@ -4158,7 +4212,9 @@ async function installSonarScanner({
       await verifySignature(downloadPath, signaturePath);
     }
 
-    const extractedPath = await extractZip(downloadPath);
+    // PowerShell 5.1 (used on some Windows agents) requires the .zip extension for Expand-Archive
+    const extractInput = await ensureZipExtension(downloadPath);
+    const extractedPath = await extractZip(extractInput);
 
     // Find the actual scanner directory inside the extracted folder
     const scannerPath = path$1.join(
@@ -4166,7 +4222,7 @@ async function installSonarScanner({
       scannerDirName(scannerVersion, flavor)
     );
 
-    toolDir = await cacheDir(scannerPath, TOOLNAME, scannerVersion, flavor);
+    toolDir = await cacheDir(scannerPath, TOOLNAME, semVerVersion, flavor);
 
     info(`Sonar Scanner CLI cached to: ${toolDir}`);
   } else {
@@ -4467,10 +4523,14 @@ function getInputs() {
   const args = getInput("args");
   const projectBaseDir = getInput("projectBaseDir");
   const scannerBinariesUrl = getInput("scannerBinariesUrl");
+  const scannerBinariesAuthHeader = getInput("scannerBinariesAuthHeader") || undefined;
+  if (scannerBinariesAuthHeader) {
+    setSecret(scannerBinariesAuthHeader);
+  }
   const scannerVersion = getInput("scannerVersion");
   const skipSignatureVerification = getBooleanInput("skipSignatureVerification");
 
-  return { args, projectBaseDir, scannerBinariesUrl, scannerVersion, skipSignatureVerification };
+  return { args, projectBaseDir, scannerBinariesUrl, scannerBinariesAuthHeader, scannerVersion, skipSignatureVerification };
 }
 
 /**
@@ -4506,16 +4566,25 @@ function runSanityChecks(inputs) {
 
 async function run() {
   try {
-    const { args, projectBaseDir, scannerVersion, scannerBinariesUrl, skipSignatureVerification } =
+    const { args, projectBaseDir, scannerVersion, scannerBinariesUrl, scannerBinariesAuthHeader, skipSignatureVerification } =
       getInputs();
     const runnerEnv = getEnvVariables();
-    const { sonarToken } = runnerEnv;
+    const { sonarToken, sonarcloudUrl } = runnerEnv;
+
+    if (sonarcloudUrl) {
+      warning(
+        "The SONARCLOUD_URL environment variable is deprecated and will be removed in a future version. " +
+          "Regular users should not set it; use SONAR_REGION=us for the US region. " +
+          "For advanced needs, pass -Dsonar.scanner.sonarcloudUrl and -Dsonar.scanner.apiBaseUrl via the args input."
+      );
+    }
 
     runSanityChecks({ projectBaseDir, scannerVersion, sonarToken });
 
     const scannerDir = await installSonarScanner({
       scannerVersion,
       scannerBinariesUrl,
+      scannerBinariesAuthHeader,
       skipSignatureVerification,
     });
 

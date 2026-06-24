@@ -200,6 +200,20 @@ This can be useful when the runner executing the action is self-hosted and has r
     scannerBinariesUrl: https://my.custom.binaries.url.com/Distribution/sonar-scanner-cli/
 ```
 
+#### `scannerBinariesAuthHeader`
+
+If the server specified by `scannerBinariesUrl` requires authentication, you can provide an `Authorization` header value using the `scannerBinariesAuthHeader` option.
+The value is passed directly as the `Authorization` HTTP header, so you must include the scheme (e.g. `Bearer`, `Basic`):
+
+```yaml
+- uses: SonarSource/sonarqube-scan-action@<action version>
+  with:
+    scannerBinariesUrl: https://my.custom.binaries.url.com/Distribution/sonar-scanner-cli/
+    scannerBinariesAuthHeader: ${{ secrets.BINARIES_AUTH_HEADER }}
+```
+
+Store the full header value (e.g. `Bearer mytoken`) in the GitHub secret to avoid exposing credentials.
+
 #### `skipSignatureVerification`
 
 By default, the action verifies the OpenPGP signature of the SonarScanner CLI binary before executing it. You can disable this verification using the `skipSignatureVerification` option:
@@ -212,6 +226,8 @@ By default, the action verifies the OpenPGP signature of the SonarScanner CLI bi
 
 > [!NOTE]
 > Signature verification requires `gpg` and `dirmngr` to be installed on the runner. GitHub-hosted runners include both, but some self-hosted runners or containers may not.
+>
+> If your runner accesses the internet through a proxy, the action automatically picks up the `HTTPS_PROXY` or `https_proxy` environment variable when fetching the public key from the keyserver. `HTTP_PROXY` is intentionally not used as a fallback, since keyservers are accessed over TLS (`hkps://`).
 >
 > **Version history:**
 > - Introduced in **v7.2** with a default value of `true` to avoid breaking existing workflows on runners without `dirmngr`.
@@ -467,8 +483,10 @@ See also [example configurations of C++ projects for SonarQube Server](https://g
 
 When running the action in a self-hosted runner or container, please ensure that the following programs are installed:
 
-* **curl** or **wget**
-* **unzip**
+* **gpg**
+* **dirmngr**
+
+Note: `gpg` and `dirmngr` are only required for GPG signature verification (enabled by default). They can be omitted when setting `skipSignatureVerification: true`.
 
 ### Additional information
 
