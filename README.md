@@ -200,6 +200,20 @@ This can be useful when the runner executing the action is self-hosted and has r
     scannerBinariesUrl: https://my.custom.binaries.url.com/Distribution/sonar-scanner-cli/
 ```
 
+#### `scannerBinariesAuthHeader`
+
+If the server specified by `scannerBinariesUrl` requires authentication, you can provide an `Authorization` header value using the `scannerBinariesAuthHeader` option.
+The value is passed directly as the `Authorization` HTTP header, so you must include the scheme (e.g. `Bearer`, `Basic`):
+
+```yaml
+- uses: SonarSource/sonarqube-scan-action@<action version>
+  with:
+    scannerBinariesUrl: https://my.custom.binaries.url.com/Distribution/sonar-scanner-cli/
+    scannerBinariesAuthHeader: ${{ secrets.BINARIES_AUTH_HEADER }}
+```
+
+Store the full header value (e.g. `Bearer mytoken`) in the GitHub secret to avoid exposing credentials.
+
 #### `skipSignatureVerification`
 
 By default, the action verifies the OpenPGP signature of the SonarScanner CLI binary before executing it. You can disable this verification using the `skipSignatureVerification` option:
@@ -469,10 +483,10 @@ See also [example configurations of C++ projects for SonarQube Server](https://g
 
 When running the action in a self-hosted runner or container, please ensure that the following programs are installed:
 
-* **curl** or **wget**
-* **unzip**
 * **gpg**
 * **dirmngr**
+
+Note: `gpg` and `dirmngr` are only required for GPG signature verification (enabled by default). They can be omitted when setting `skipSignatureVerification: true`.
 
 ### Additional information
 

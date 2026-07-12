@@ -17,7 +17,7 @@ jobs:
         os: [github-ubuntu-latest-s, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action without args
@@ -37,7 +37,7 @@ jobs:
         os: [github-ubuntu-latest-s, github-windows-latest-s, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with args
@@ -66,7 +66,7 @@ jobs:
           ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with args
@@ -93,7 +93,7 @@ jobs:
         os: [github-ubuntu-latest-s, github-windows-latest-s, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with args
@@ -121,7 +121,7 @@ jobs:
         os: [github-ubuntu-latest-s, github-windows-latest-s, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with args
@@ -148,7 +148,7 @@ jobs:
         os: [github-ubuntu-latest-s, github-windows-latest-s, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with args
@@ -178,7 +178,7 @@ jobs:
         os: [github-ubuntu-latest-s, github-windows-latest-s, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - run: mkdir -p ./baseDir
@@ -198,7 +198,7 @@ jobs:
       'scannerVersion' input
     runs-on: github-ubuntu-latest-s # assumes default RUNNER_ARCH for linux is X64
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with scannerVersion
@@ -222,7 +222,7 @@ jobs:
       'scannerBinariesUrl' input with invalid URL
     runs-on: github-ubuntu-latest-s # assumes default RUNNER_ARCH for linux is X64
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with scannerBinariesUrl
@@ -245,12 +245,12 @@ jobs:
       - name: Assert Sonar Scanner CLI was not executed
         run: |
           ./test/assertFileDoesntExist ./output.properties
-  scannerBinariesUrlIsEscapedWithWget:
+  scannerBinariesUrlCommandInjectionTest:
     name: >
-      'scannerBinariesUrl' is escaped with wget so special chars are not injected in the download command
+      'scannerBinariesUrl' does not allow command injection via semicolons
     runs-on: github-ubuntu-latest-s
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with scannerBinariesUrl
@@ -266,22 +266,14 @@ jobs:
       - name: Assert file.txt does not exist
         run: |
           ./test/assertFileDoesntExist "$RUNNER_TEMP/sonarscanner/file.txt"
-  scannerBinariesUrlIsEscapedWithCurl:
+  scannerBinariesUrlCommandInjectionWithSpacesTest:
     name: >
-      'scannerBinariesUrl' is escaped with curl so special chars are not injected in the download command
+      'scannerBinariesUrl' does not allow command injection via spaces and quotes
     runs-on: github-ubuntu-latest-s
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Remove wget
-        run: sudo apt-get remove -y wget
-      - name: Assert wget is not available
-        run: |
-          if command -v wget 2>&1 >/dev/null
-          then
-            exit 1
-          fi
       - name: Run action with scannerBinariesUrl
         id: runTest
         uses: ./
@@ -300,7 +292,7 @@ jobs:
       Don't fail on Gradle project
     runs-on: github-ubuntu-latest-s
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action on Gradle project
@@ -321,7 +313,7 @@ jobs:
       Don't fail on Kotlin Gradle project
     runs-on: github-ubuntu-latest-s
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action on Kotlin Gradle project
@@ -342,7 +334,7 @@ jobs:
       Don't fail on Maven project
     runs-on: github-ubuntu-latest-s
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action on Maven project
@@ -375,7 +367,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action on sample project
@@ -398,7 +390,7 @@ jobs:
         os: [github-ubuntu-latest-s, github-windows-latest-s, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with debug mode
@@ -429,7 +421,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarQube Cache
@@ -451,17 +443,17 @@ jobs:
           ./test/assertFileExists ./test/example-project/.scannerwork/report-task.txt
   overrideSonarcloudUrlTest:
     name: >
-      'SONARCLOUD_URL' is used
+      Deprecated 'SONARCLOUD_URL' still works and emits a deprecation warning
     strategy:
       fail-fast: false
       matrix:
         os: [github-ubuntu-latest-s, github-windows-latest-s, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run action with SONARCLOUD_URL
+      - name: Run action with deprecated SONARCLOUD_URL
         uses: ./
         with:
           args: -Dsonar.scanner.apiBaseUrl=api.mirror.sonarcloud.io -Dsonar.scanner.internal.dumpToFile=./output.properties
@@ -472,22 +464,14 @@ jobs:
         run: |
           ./test/assertFileContains ./output.properties "sonar.host.url=mirror.sonarcloud.io"
           ./test/assertFileContains ./output.properties "sonar.scanner.sonarcloudUrl=mirror.sonarcloud.io"
-  curlPerformsRedirect:
+  scannerBinariesUrlRedirectFollowed:
     name: >
-      curl performs redirect when scannerBinariesUrl returns 3xx
+      scannerBinariesUrl redirect (3xx) is followed
     runs-on: github-ubuntu-latest-s
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Remove wget
-        run: sudo apt-get remove -y wget
-      - name: Assert wget is not available
-        run: |
-          if command -v wget 2>&1 >/dev/null
-          then
-            exit 1
-          fi
       - name: Generate SSL certificates for nginx
         run: ./generate-ssl.sh
         working-directory: .github/qa-nginx-redirecting
@@ -521,7 +505,7 @@ jobs:
         os: [github-ubuntu-latest-s, github-windows-latest-s, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with SSL certificate
@@ -572,7 +556,7 @@ jobs:
       Analysis takes into account 'SONAR_ROOT_CERT'
     runs-on: github-ubuntu-latest-s
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Generate server certificate
@@ -680,7 +664,7 @@ jobs:
       truststore.p12 is updated when present
     runs-on: github-ubuntu-latest-s
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Create SONAR_SSL_FOLDER with a file in it (not-truststore.p12)
@@ -809,7 +793,7 @@ jobs:
       'scannerVersion' input validation
     runs-on: github-ubuntu-latest-s
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run action with invalid scannerVersion
@@ -827,3 +811,40 @@ jobs:
         run: |
           echo "Action with invalid scannerVersion should have failed but succeeded"
           exit 1
+
+  qa-gate:
+    name: QA Main - gate
+    runs-on: ubuntu-latest
+    needs:
+      - noInputsTest
+      - argsInputTest
+      - argsInputInjectionTest
+      - backtickCommandInjectionTest
+      - dollarSymbolCommandInjectionTest
+      - otherCommandInjectionVariantsTest
+      - projectBaseDirInputTest
+      - scannerVersionTest
+      - scannerBinariesUrlTest
+      - scannerBinariesUrlCommandInjectionTest
+      - scannerBinariesUrlCommandInjectionWithSpacesTest
+      - dontFailGradleTest
+      - dontFailGradleKotlinTest
+      - dontFailMavenTest
+      - runAnalysisTest
+      - runnerDebugUsedTest
+      - runAnalysisWithCacheTest
+      - overrideSonarcloudUrlTest
+      - scannerBinariesUrlRedirectFollowed
+      - useSslCertificate
+      - analysisWithSslCertificate
+      - updateTruststoreWhenPresent
+      - scannerVersionValidationTest
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "One or more required jobs failed or were cancelled."
+            exit 1
+          fi
+          echo "All checks passed."
