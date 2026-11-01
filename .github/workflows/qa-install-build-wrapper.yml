@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
+  schedule:
+    - cron: '55 3 * * 1-5' # Check the current SonarQube Cloud build wrapper Monday-Friday (UTC).
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -42,7 +45,7 @@ jobs:
         id: run-action
         uses: ./install-build-wrapper
         env:
-          SONAR_HOST_URL: 'https://next.sonarqube.com/sonarqube/'
+          SONAR_HOST_URL: 'https://sonarcloud.io/'
 
       # build-wrapper does not have --help or equivalent option.
       # Pass to few arguments and ignore error code
