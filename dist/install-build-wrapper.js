@@ -1,4 +1,4 @@
-import { f as execExports, h as addPath, a as info, o as setOutput, j as setFailed, p as startGroup, q as endGroup } from './exec-BeYcktvA.js';
+import { g as getExecOutput, a as addPath, i as info, s as setOutput, b as setFailed, e as exec, c as startGroup, d as endGroup } from './core-w6vZwEji.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import 'os';
@@ -50,6 +50,20 @@ import 'timers';
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+
+/**
+ * Resolve the server to download the build wrapper from.
+ * SONAR_HOST_URL takes precedence, otherwise SonarQube Cloud is assumed,
+ * using SONAR_REGION to select the region (same as the scanner).
+ */
+function getSonarHostUrl({ SONAR_HOST_URL, SONAR_REGION }) {
+  if (SONAR_HOST_URL) {
+    return SONAR_HOST_URL.replace(/\/$/, "");
+  }
+  return SONAR_REGION?.trim().toLowerCase() === "us"
+    ? "https://sonarqube.us"
+    : "https://sonarcloud.io";
+}
 
 /**
  * Compute all names and paths related to the build wrapper
@@ -124,7 +138,7 @@ function getSuffixAndName(runnerOS, runnerArch) {
 async function getRealPath(filePath, runnerOS) {
   switch (runnerOS) {
     case "Windows": {
-      const windowsResult = await execExports.getExecOutput("cygpath", [
+      const windowsResult = await getExecOutput("cygpath", [
         "--absolute",
         "--windows",
         filePath,
@@ -132,14 +146,14 @@ async function getRealPath(filePath, runnerOS) {
       return windowsResult.stdout.trim();
     }
     case "Linux": {
-      const linuxResult = await execExports.getExecOutput("readlink", [
+      const linuxResult = await getExecOutput("readlink", [
         "-f",
         filePath,
       ]);
       return linuxResult.stdout.trim();
     }
     case "macOS": {
-      const macResult = await execExports.getExecOutput("greadlink", ["-f", filePath]);
+      const macResult = await getExecOutput("greadlink", ["-f", filePath]);
       return macResult.stdout.trim();
     }
     default:
@@ -169,7 +183,7 @@ async function getRealPath(filePath, runnerOS) {
 async function installMacOSPackages() {
   if (process.platform === "darwin") {
     info("Installing required packages for macOS");
-    await execExports.exec("brew", ["install", "coreutils"]);
+    await exec("brew", ["install", "coreutils"]);
   }
 }
 
@@ -177,18 +191,14 @@ async function installMacOSPackages() {
  * These RUNNER_XX env variables come from GitHub by default.
  * See https://docs.github.com/en/actions/reference/workflows-and-actions/variables#default-environment-variables
  *
- * If SONAR_HOST_URL is omitted, we assume sonarcloud.io
+ * If SONAR_HOST_URL is omitted, we assume SonarQube Cloud (region given by SONAR_REGION)
  */
 function getEnvVariables() {
-  const sonarHostUrl = process.env.SONAR_HOST_URL
-    ? process.env.SONAR_HOST_URL.replace(/\/$/, "")
-    : "https://sonarcloud.io";
-
   return {
     runnerOS: process.env.RUNNER_OS,
     runnerArch: process.env.RUNNER_ARCH,
     runnerTemp: process.env.RUNNER_TEMP,
-    sonarHostUrl,
+    sonarHostUrl: getSonarHostUrl(process.env),
   };
 }
 
@@ -207,10 +217,10 @@ async function downloadAndInstallBuildWrapper(downloadUrl, runnerEnv) {
     fs.mkdirSync(runnerTemp, { recursive: true });
   }
 
-  await execExports.exec("curl", ["-sSLo", tmpZipPath, downloadUrl]);
+  await exec("curl", ["-sSLo", tmpZipPath, downloadUrl]);
 
   info("Decompressing");
-  await execExports.exec("unzip", ["-o", "-d", runnerTemp, tmpZipPath]);
+  await exec("unzip", ["-o", "-d", runnerTemp, tmpZipPath]);
 
   endGroup();
 }
