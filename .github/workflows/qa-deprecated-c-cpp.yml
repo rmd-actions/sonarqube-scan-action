@@ -13,13 +13,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [github-ubuntu-latest-s, github-windows-latest-s, macos-latest, macos-14]
+        os: [github-ubuntu-latest-s, github-windows-latest-s, macos-latest, macos-15]
         cache: [true, false]
         include:
           - arch: X64
           - os: macos-latest
             arch: ARM64
-          - os: macos-14
+          - os: macos-15
             arch: ARM64
     runs-on: ${{ matrix.os }}
     steps:
@@ -42,14 +42,14 @@ jobs:
         id: run-action
         uses: ./deprecated-c-cpp
         env:
-          SONAR_HOST_URL: 'https://next.sonarqube.com/sonarqube/'
+          SONAR_HOST_URL: 'https://sonarcloud.io/'
         with:
           cache-binaries: ${{ matrix.cache }}
 
       - name: SONAR_HOST_URL is set
         shell: bash
         run: |
-          [[ $SONAR_HOST_URL == "https://next.sonarqube.com/sonarqube/" ]]
+          [[ $SONAR_HOST_URL == "https://sonarcloud.io/" ]]
 
       - name: sonar-scanner is installed and in PATH
         run: |
